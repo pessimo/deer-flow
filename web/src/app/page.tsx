@@ -2,17 +2,17 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { useEffect } from "react";
 
-import { SiteHeader } from "./chat/components/site-header";
-import { Jumbotron } from "./landing/components/jumbotron";
-import { Ray } from "./landing/components/ray";
-import { CaseStudySection } from "./landing/sections/case-study-section";
-import { CoreFeatureSection } from "./landing/sections/core-features-section";
-import { JoinCommunitySection } from "./landing/sections/join-community-section";
-import { MultiAgentSection } from "./landing/sections/multi-agent-section";
+// import { SiteHeader } from "./chat/components/site-header";
+// import { Jumbotron } from "./landing/components/jumbotron";
+// import { Ray } from "./landing/components/ray";
+// import { CaseStudySection } from "./landing/sections/case-study-section";
+// import { CoreFeatureSection } from "./landing/sections/core-features-section";
+// import { JoinCommunitySection } from "./landing/sections/join-community-section";
+// import { MultiAgentSection } from "./landing/sections/multi-agent-section";
 
 export default function HomePage() {
   const router = useRouter();
