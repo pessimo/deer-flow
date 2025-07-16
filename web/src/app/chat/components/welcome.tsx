@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 import { cn } from "~/lib/utils";
 
 export function Welcome({ className }: { className?: string }) {
+  const t = useTranslations("chat.welcome");
+
   return (
     <motion.div
       className={cn("flex flex-col", className)}
@@ -13,11 +16,9 @@ export function Welcome({ className }: { className?: string }) {
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
     >
-      <h3 className="mb-2 text-center text-3xl font-medium">
-        你好！
-      </h3>
+      <h3 className="mb-2 text-center text-3xl font-medium">{t("greeting")}</h3>
       <div className="text-muted-foreground px-4 text-center text-lg">
-        这是使用最前沿的大语言模型构建的AI助手,帮助你解决风貌领域的复杂问题。
+        {t("description")}
       </div>
     </motion.div>
   );
