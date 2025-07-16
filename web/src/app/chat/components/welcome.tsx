@@ -14,20 +14,10 @@ export function Welcome({ className }: { className?: string }) {
       animate={{ opacity: 1, scale: 1 }}
     >
       <h3 className="mb-2 text-center text-3xl font-medium">
-        👋 Hello, there!
+        你好！
       </h3>
       <div className="text-muted-foreground px-4 text-center text-lg">
-        Welcome to{" "}
-        <a
-          href="https://github.com/bytedance/deer-flow"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline"
-        >
-          🦌 DeerFlow
-        </a>
-        , a deep research assistant built on cutting-edge language models, helps
-        you search on web, browse information, and handle complex tasks.
+        这是使用最前沿的大语言模型构建的AI助手,帮助你解决风貌领域的复杂问题。
       </div>
     </motion.div>
   );

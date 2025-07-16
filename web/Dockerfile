@@ -35,7 +35,7 @@ RUN \
 
 ##### RUNNER
 
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
+FROM registry.cn-shanghai.aliyuncs.com/metrodata/nodejs20-debian12:v1.0 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
