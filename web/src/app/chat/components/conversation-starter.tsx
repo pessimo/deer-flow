@@ -19,15 +19,15 @@ export function ConversationStarter({
   const questions = t.raw("conversationStarters") as string[];
 
   return (
-<div className={cn("flex flex-col items-center", className)}>
+    <div className={cn("flex flex-col items-center", className)}>
       <div className="pointer-events-none fixed inset-0 flex items-center justify-center">
         <Welcome className="pointer-events-auto mb-15 w-[75%] -translate-y-24" />
       </div>
-      <ul className='flex-wrap'>
+      <ul className="flex flex-wrap">
         {questions.map((question, index) => (
           <motion.li
             key={question}
-            className='flex w-full shrink-0 p-2 hidden active:scale-105'
+            className="flex w-1/2 shrink-0 p-2 active:scale-105"
             style={{ transition: "all 0.2s ease-out" }}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
