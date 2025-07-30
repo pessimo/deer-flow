@@ -254,11 +254,72 @@ def coordinator_node(
     )
 
 
+def generate_report_section(state: State, config: RunnableConfig, section_name: str) -> str:  
+    """Generate a specific section of the report."""  
+    logger.info(f"Generating report section: {section_name}")  
+    configurable = Configuration.from_runnable_config(config)  
+    current_plan = state.get("current_plan")  
+    observations = state.get("observations", [])  
+      
+    # 构建针对特定部分的输入  
+    input_ = {  
+        "messages": [  
+            HumanMessage(  
+                f"# Research Requirements\n\n## Task\n\n{current_plan.title}\n\n## Description\n\n{current_plan.thought}"  
+            )  
+        ],  
+        "locale": state.get("locale", "en-US"),  
+        "section_type": section_name,  # 新增字段指定要生成的部分  
+    }  
+      
+    # 使用专门的提示模板  
+    invoke_messages = apply_prompt_template(f"reporter_{section_name}", input_, configurable)  
+      
+    # 添加观察结果  
+    for observation in observations:  
+        invoke_messages.append(  
+            HumanMessage(  
+                content=f"Below are some observations for the research task:\n\n{observation}",  
+                name="observation",  
+            )  
+        )  
+      
+    # 调用 LLM 生成特定部分  
+    response = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(invoke_messages)  
+    return response.content
+
+def combine_report_sections(partial_reports: dict) -> str:  
+    """Combine all report sections into a final report."""  
+    sections_order = ["key_points", "overview", "detailed_analysis", "citations"]  
+      
+    final_report = ""  
+    for section in sections_order:  
+        if section in partial_reports:  
+            final_report += partial_reports[section] + "\n\n"  
+      
+    return final_report.strip()
+
+import re
+def parse_text_to_dict(text):
+    # 使用正则表达式匹配标题和内容
+    pattern = r'(?<=\n)### (.*?)\n(.*?)(?=\n### |\Z)'
+    matches = re.findall(pattern, text, re.DOTALL)
+    
+    result = []
+    for title, content in matches:
+        # 去除内容中的前后空白字符
+        cleaned_content = content.strip()
+        # 添加到结果列表
+        result.append({'title': title, 'content': cleaned_content})
+    
+    return result
+
 def reporter_node(state: State, config: RunnableConfig):
     """Reporter node that write a final report."""
     logger.info("Reporter write final report")
     configurable = Configuration.from_runnable_config(config)
     current_plan = state.get("current_plan")
+    
     input_ = {
         "messages": [
             HumanMessage(
@@ -273,24 +334,198 @@ def reporter_node(state: State, config: RunnableConfig):
     # Add a reminder about the new report format, citation style, and table usage
     invoke_messages.append(
         HumanMessage(
-            content="IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |",
+            content="IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points(要点总结) - A bulleted list of the most important findings\n2. Overview(概述) - A brief introduction to the topic\n3. Detailed Analysis(详细分析) - Organized into logical sections\n4. Survey Note (研究说明(optional 可选)) - For more comprehensive reports\n5. Key Citations(关键引用) - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |",
             name="system",
         )
     )
 
+    refine_content_instruction = []
     for observation in observations:
+        refine_content_instruction.append(
+            HumanMessage(
+                content=f"Below are some observations for the research task:\n\n{observation}",
+                name="observation",
+            ))
         invoke_messages.append(
             HumanMessage(
                 content=f"Below are some observations for the research task:\n\n{observation}",
                 name="observation",
             )
         )
-    logger.debug(f"Current invoke messages: {invoke_messages}")
+
+
+    # logger.debug(f"Current invoke messages: {invoke_messages}")
     response = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(invoke_messages)
     response_content = response.content
-    logger.info(f"reporter response: {response_content}")
+    # logger.info(f"reporter response: {response_content}")
 
-    return {"final_report": response_content}
+    final_response_content = ""
+    for section_ends in [['## 概述', '## 详细分析'], ['## 详细分析', '## 研究说明'], ['## 研究说明', '## 关键引用']]:
+        section_content = response_content.split(section_ends[0])[1].split(section_ends[1])[0]
+        logger.debug(f"开始扩写{section_ends[0]}")
+        if section_ends[0] == '## 概述':
+            section_instruction = []
+            section_instruction.append(
+                HumanMessage(
+                    content=f"""IMPORTANT: 请根据我提供的参考内容和当前概述内容，扩写出专业、详细的报告概述。
+                                当前概述内容如下: {section_content}，
+                                要求如下：
+                                ## 字数要求：超过2000字的完整概述
+                                ## 结构框架：
+                                ### 核心研究问题（150字左右）
+                                + 明确阐述研究目标
+                                + 研究的重要性和必要性
+                                ### 方法论说明（200字左右）
+                                + 数据来源（文献/实验/调研等）
+                                + 分析工具/理论框架
+                                + 研究时间跨度与样本特征
+                                ### 主要发现与结论（250字左右）
+                                + 分点列出3-5个核心结论
+                                + 每个结论需附带简要论据
+                                ### 实践意义（100字左右）
+                                + 对行业的指导价值
+                                + 可能的推广应用场景
+                                ## 内容要求：
+                                保持客观中立的学术语气
+                                适当使用连接词保证行文流畅
+                                专业术语需附带简要解释"""
+                )
+            )
+            section_instruction.extend(refine_content_instruction)
+            section_extended_content = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(section_instruction).content
+            final_response_content += section_extended_content + "\n\n"
+        elif section_ends[0] == '## 详细分析':
+            section_instruction = []
+            section_instruction.append(
+                HumanMessage(
+                    content=f"""IMPORTANT: 请根据我提供的参考内容和当前章节内容,扩写出更详细的报告内容。
+                                当前详细分析的章节内容如下: {section_content}，
+                                要求如下：
+                                ## 字数要求：超过5000字的完整大段落论述
+                                ## 结构要求：保持现有结构，特别是小标题不要更改
+                                ## 内容要求：
+                                + 现有内容中图片和表格都不得删除，也无需增加
+                                + 要使用更长的专业的描述，保证学术水平和严谨
+                                + 保持客观中立的学术语气
+                                + 如果当前内容只有表格，要根据内容，扩写长文描述和总结
+                                + 适当使用连接词保证行文流畅
+                                + 专业术语需附带简要解释"""
+                )
+            )
+            section_extended_content = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(section_instruction).content
+            final_response_content += section_extended_content + "\n\n"
+            # analysis_section_list = parse_text_to_dict(section_content)
+            # for analysis_section in analysis_section_list:
+            #     section_instruction = []
+            #     section_instruction.append(
+            #         HumanMessage(
+            #             content=f"""IMPORTANT: 请根据我提供的参考内容和当前章节内容,扩写出更详细的报告内容。
+            #                         当前详细分析的章节内容如下: {analysis_section}，
+            #                         要求如下：
+            #                         ## 字数要求：超过800字的完整段落论述
+            #                         ## 结构要求：保持现有结构，特别是小标题不要更改
+            #                         ## 内容要求：
+            #                         + 现有内容中图片和表格都不得删除，也无需增加
+            #                         + 要使用更长的专业的描述，保证学术水平和严谨
+            #                         + 保持客观中立的学术语气
+            #                         + 如果当前内容只有表格，要根据内容，扩写长文描述和总结
+            #                         + 适当使用连接词保证行文流畅
+            #                         + 专业术语需附带简要解释"""
+            #         )
+            #     )
+            #     section_instruction.extend(refine_content_instruction)
+            #     section_extended_content = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(section_instruction).content
+            #     final_response_content += section_extended_content + "\n\n"
+        elif section_ends[0] == '## 研究说明':
+            section_instruction = []
+            section_instruction.append(
+                HumanMessage(
+                    content=f"""IMPORTANT: 请按照以下结构化要求扩写研究报告的"调查研究"章节，需体现学术深度与系统性，总字数建议1500-2000字。输出语言与原文保持一致。
+                                当前研究说明如下: {section_content}，
+                                扩写结构及核心要求：
+                                ### 文献综述与理论框架
+                                广度要求：
+                                至少涵盖3个学术流派/理论视角
+                                包含国内外代表性研究（注明地域分布）
+                                需体现时间维度（经典研究→近期进展）
+                                深度要求：
+                                指出已有研究的2-3个争议焦点
+                                明确现有文献的2个主要空白点
+                                理论框架需可视化呈现（可建议图表类型）
+                                ### 研究方法与数据分析
+                                方法论层面：
+                                说明方法选择的依据（对比至少2种可选方法）
+                                详细描述操作化过程（如变量定义、样本选取逻辑）
+                                需包含质量控制措施
+                                数据层面：
+                                列明所有数据来源及其权威性评估
+                                说明数据预处理步骤
+                                明确分析工具的版本及参数设置
+                                ### 批判性讨论
+                                自我反思：
+                                至少指出3个方法论局限
+                                说明研究假设的潜在风险
+                                学术对话：
+                                回应2-3个相关理论的质疑
+                                比较本研究与同类研究的异同
+                                实践启示：
+                                阐明研究发现的适用边界
+                                提示应用时的注意事项
+                                ### 未来研究方向
+                                短期建议（1-3年）：
+                                列出3个可立即开展的延伸研究
+                                建议具体的技术路线
+                                长期建议（3-5年）：
+                                提出2个跨学科研究方向
+                                指明需要突破的技术瓶颈
+                                方法论革新：
+                                预测本领域可能的方法论变革
+                                建议新型分析工具的适配方案"""
+                )
+            )
+            section_instruction.extend(refine_content_instruction)
+            section_extended_content = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(section_instruction).content
+            final_response_content += section_extended_content + "\n\n"
+
+    return {"final_report": final_response_content}
+
+# def reporter_node(state: State, config: RunnableConfig):
+#     """Reporter node that write a final report."""
+#     logger.info("Reporter write final report")
+#     configurable = Configuration.from_runnable_config(config)
+#     current_plan = state.get("current_plan")
+#     input_ = {
+#         "messages": [
+#             HumanMessage(
+#                 f"# Research Requirements\n\n## Task\n\n{current_plan.title}\n\n## Description\n\n{current_plan.thought}"
+#             )
+#         ],
+#         "locale": state.get("locale", "en-US"),
+#     }
+#     invoke_messages = apply_prompt_template("reporter", input_, configurable)
+#     observations = state.get("observations", [])
+
+#     # Add a reminder about the new report format, citation style, and table usage
+#     invoke_messages.append(
+#         HumanMessage(
+#             content="IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |",
+#             name="system",
+#         )
+#     )
+
+#     for observation in observations:
+#         invoke_messages.append(
+#             HumanMessage(
+#                 content=f"Below are some observations for the research task:\n\n{observation}",
+#                 name="observation",
+#             )
+#         )
+#     logger.debug(f"Current invoke messages: {invoke_messages}")
+#     response = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(invoke_messages)
+#     response_content = response.content
+#     logger.info(f"reporter response: {response_content}")
+
+#     return {"final_report": response_content}
 
 
 def research_team_node(state: State):

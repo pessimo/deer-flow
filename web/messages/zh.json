@@ -92,12 +92,12 @@
       "deepThinking": "深度思考",
       "deepThinkingTooltip": {
         "title": "深度思考模式：{status}",
-        "description": "启用后，DeerFlow 将使用推理模型（{model}）生成更深思熟虑的计划。"
+        "description": "启用后，TownScapeAgent 将使用推理模型（{model}）生成更深思熟虑的计划。"
       },
       "investigation": "调研",
       "investigationTooltip": {
         "title": "调研模式：{status}",
-        "description": "启用后，DeerFlow 将在规划前进行快速搜索。这对于与时事和新闻相关的研究很有用。"
+        "description": "启用后，TownScapeAgent 将在规划前进行快速搜索。这对于与时事和新闻相关的研究很有用。"
       },
       "enhancePrompt": "用 AI 增强提示",
       "on": "开启",
