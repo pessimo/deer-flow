@@ -260,6 +260,7 @@ function ResearchCard({
     (state) => hasReport && state.messages.get(reportId)!.isStreaming,
   );
   const openResearchId = useStore((state) => state.openResearchId);
+  const researchIds = useStore((state) => state.researchIds);
   const state = useMemo(() => {
     if (hasReport) {
       return reportGenerating ? t("generatingReport") : t("reportGenerated");
@@ -273,20 +274,34 @@ function ResearchCard({
     }
     return undefined;
   }, [msg]);
+
+  const researchIndex = useMemo(() => {
+    return researchIds.indexOf(researchId) + 1;
+  }, [researchIds, researchId]);
+
+  const getResearchTitle = useMemo(() => {
+    const titles = ["大纲", "概述", "分析", "综述说明"];
+    return titles[researchIndex - 1] ?? `大纲${researchIndex}`;
+  }, [researchIndex]);
+
   const handleOpen = useCallback(() => {
+    console.log(msg, "msg");
+    console.log(useStore.getState().messages, "useStore.getState().messages");
+    console.log(JSON.stringify(useStore.getState().messages), "messages");
     if (openResearchId === researchId) {
       closeResearch();
     } else {
       openResearch(researchId);
     }
     onToggleResearch?.();
-  }, [openResearchId, researchId, onToggleResearch]);
+  }, [msg, openResearchId, researchId, onToggleResearch]);
   return (
     <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>
           <RainbowText animated={state !== t("reportGenerated")}>
-            {title !== undefined && title !== "" ? title : t("deepResearch")}
+            {/*{title !== undefined && title !== "" ? title : t("deepResearch")}*/}
+            {msg?.agent === "planner" && getResearchTitle}
           </RainbowText>
         </CardTitle>
       </CardHeader>

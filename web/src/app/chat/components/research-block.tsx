@@ -66,20 +66,89 @@ export function ResearchBlock({
     }, 1000);
   }, [reportId]);
 
-  // Download report as markdown
+  // Download all reports as markdown
   const handleDownload = useCallback(() => {
-    if (!reportId) {
+    const state = useStore.getState();
+    const { researchIds, researchReportIds, messages } = state;
+
+    const allReports: Array<{ researchId: string; reportId: string; report: any; index: number }> = [];
+
+    researchIds.forEach((researchId, index) => {
+      const reportId = researchReportIds.get(researchId);
+      if (reportId) {
+        const report = messages.get(reportId);
+        if (report) {
+          allReports.push({
+            researchId,
+            reportId,
+            report,
+            index: index + 1
+          });
+        }
+      }
+    });
+
+    if (allReports.length === 0) {
+      console.log("没有找到任何report");
       return;
     }
-    const report = useStore.getState().messages.get(reportId);
-    if (!report) {
-      return;
-    }
+
+    console.log("所有reports:", allReports);
+    let markdownContent = ``;
+
+     // 分离大纲和其他报告
+     const outlineReport = allReports.find(({ index }) => index === 1); // 大纲
+     const otherReports = allReports.filter(({ index }) => index > 1); // 概述、分析、综述说明
+
+     if (outlineReport) {
+       const outlineContent = outlineReport.report.content;
+
+       const summaryIndex = outlineContent.indexOf('## 要点总结');
+       const referenceIndex = outlineContent.indexOf('## 关键引用');
+
+       if (summaryIndex !== -1 && referenceIndex !== -1) {
+         const beforeSummary = outlineContent.substring(0, summaryIndex);
+
+         const summaryEndIndex = outlineContent.indexOf('\n\n', summaryIndex);
+         const summarySection = summaryEndIndex !== -1
+           ? outlineContent.substring(summaryIndex, summaryEndIndex + 2)
+           : outlineContent.substring(summaryIndex);
+
+         const referenceEndIndex = outlineContent.indexOf('\n\n', referenceIndex);
+         const referenceSection = referenceEndIndex !== -1
+           ? outlineContent.substring(referenceIndex, referenceEndIndex + 2)
+           : outlineContent.substring(referenceIndex);
+
+         const afterReference = referenceEndIndex !== -1
+           ? outlineContent.substring(referenceEndIndex + 2)
+           : '';
+
+         markdownContent += beforeSummary;
+         markdownContent += summarySection;
+
+         otherReports.forEach(({ report }) => {
+           markdownContent += report.content + '\n\n';
+         });
+
+         markdownContent += referenceSection;
+         markdownContent += afterReference;
+       } else {
+         markdownContent += outlineContent + '\n\n';
+         otherReports.forEach(({ report }) => {
+           markdownContent += report.content + '\n\n';
+         });
+       }
+     } else {
+       allReports.forEach(({ report }) => {
+         markdownContent += report.content + '\n\n';
+       });
+     }
+
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
     const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const filename = `research-report-${timestamp}.md`;
-    const blob = new Blob([report.content], { type: 'text/markdown' });
+    const filename = `research-reports-${timestamp}.md`;
+    const blob = new Blob([markdownContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -90,9 +159,9 @@ export function ResearchBlock({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }, 0);
-  }, [reportId]);
+  }, []);
 
-    
+
   const handleEdit = useCallback(() => {
     setEditing((editing) => !editing);
   }, []);
