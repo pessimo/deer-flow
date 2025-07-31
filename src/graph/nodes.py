@@ -254,65 +254,65 @@ def coordinator_node(
     )
 
 
-def generate_report_section(state: State, config: RunnableConfig, section_name: str) -> str:  
-    """Generate a specific section of the report."""  
-    logger.info(f"Generating report section: {section_name}")  
-    configurable = Configuration.from_runnable_config(config)  
-    current_plan = state.get("current_plan")  
-    observations = state.get("observations", [])  
+# def generate_report_section(state: State, config: RunnableConfig, section_name: str) -> str:  
+#     """Generate a specific section of the report."""  
+#     logger.info(f"Generating report section: {section_name}")  
+#     configurable = Configuration.from_runnable_config(config)  
+#     current_plan = state.get("current_plan")  
+#     observations = state.get("observations", [])  
       
-    # 构建针对特定部分的输入  
-    input_ = {  
-        "messages": [  
-            HumanMessage(  
-                f"# Research Requirements\n\n## Task\n\n{current_plan.title}\n\n## Description\n\n{current_plan.thought}"  
-            )  
-        ],  
-        "locale": state.get("locale", "en-US"),  
-        "section_type": section_name,  # 新增字段指定要生成的部分  
-    }  
+#     # 构建针对特定部分的输入  
+#     input_ = {  
+#         "messages": [  
+#             HumanMessage(  
+#                 f"# Research Requirements\n\n## Task\n\n{current_plan.title}\n\n## Description\n\n{current_plan.thought}"  
+#             )  
+#         ],  
+#         "locale": state.get("locale", "en-US"),  
+#         "section_type": section_name,  # 新增字段指定要生成的部分  
+#     }  
       
-    # 使用专门的提示模板  
-    invoke_messages = apply_prompt_template(f"reporter_{section_name}", input_, configurable)  
+#     # 使用专门的提示模板  
+#     invoke_messages = apply_prompt_template(f"reporter_{section_name}", input_, configurable)  
       
-    # 添加观察结果  
-    for observation in observations:  
-        invoke_messages.append(  
-            HumanMessage(  
-                content=f"Below are some observations for the research task:\n\n{observation}",  
-                name="observation",  
-            )  
-        )  
+#     # 添加观察结果  
+#     for observation in observations:  
+#         invoke_messages.append(  
+#             HumanMessage(  
+#                 content=f"Below are some observations for the research task:\n\n{observation}",  
+#                 name="observation",  
+#             )  
+#         )  
       
-    # 调用 LLM 生成特定部分  
-    response = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(invoke_messages)  
-    return response.content
+#     # 调用 LLM 生成特定部分  
+#     response = get_llm_by_type(AGENT_LLM_MAP["reporter"]).invoke(invoke_messages)  
+#     return response.content
 
-def combine_report_sections(partial_reports: dict) -> str:  
-    """Combine all report sections into a final report."""  
-    sections_order = ["key_points", "overview", "detailed_analysis", "citations"]  
+# def combine_report_sections(partial_reports: dict) -> str:  
+#     """Combine all report sections into a final report."""  
+#     sections_order = ["key_points", "overview", "detailed_analysis", "citations"]  
       
-    final_report = ""  
-    for section in sections_order:  
-        if section in partial_reports:  
-            final_report += partial_reports[section] + "\n\n"  
+#     final_report = ""  
+#     for section in sections_order:  
+#         if section in partial_reports:  
+#             final_report += partial_reports[section] + "\n\n"  
       
-    return final_report.strip()
+#     return final_report.strip()
 
-import re
-def parse_text_to_dict(text):
-    # 使用正则表达式匹配标题和内容
-    pattern = r'(?<=\n)### (.*?)\n(.*?)(?=\n### |\Z)'
-    matches = re.findall(pattern, text, re.DOTALL)
+# import re
+# def parse_text_to_dict(text):
+#     # 使用正则表达式匹配标题和内容
+#     pattern = r'(?<=\n)### (.*?)\n(.*?)(?=\n### |\Z)'
+#     matches = re.findall(pattern, text, re.DOTALL)
     
-    result = []
-    for title, content in matches:
-        # 去除内容中的前后空白字符
-        cleaned_content = content.strip()
-        # 添加到结果列表
-        result.append({'title': title, 'content': cleaned_content})
+#     result = []
+#     for title, content in matches:
+#         # 去除内容中的前后空白字符
+#         cleaned_content = content.strip()
+#         # 添加到结果列表
+#         result.append({'title': title, 'content': cleaned_content})
     
-    return result
+#     return result
 
 def reporter_node(state: State, config: RunnableConfig):
     """Reporter node that write a final report."""
@@ -372,17 +372,17 @@ def reporter_node(state: State, config: RunnableConfig):
                                 要求如下：
                                 ## 字数要求：超过2000字的完整概述
                                 ## 结构框架：
-                                ### 核心研究问题（150字左右）
+                                ### 核心研究问题（500字左右）
                                 + 明确阐述研究目标
                                 + 研究的重要性和必要性
-                                ### 方法论说明（200字左右）
+                                ### 方法论说明（800字左右）
                                 + 数据来源（文献/实验/调研等）
                                 + 分析工具/理论框架
                                 + 研究时间跨度与样本特征
-                                ### 主要发现与结论（250字左右）
+                                ### 主要发现与结论（600字左右）
                                 + 分点列出3-5个核心结论
                                 + 每个结论需附带简要论据
-                                ### 实践意义（100字左右）
+                                ### 实践意义（200字左右）
                                 + 对行业的指导价值
                                 + 可能的推广应用场景
                                 ## 内容要求：
@@ -508,7 +508,7 @@ def reporter_node(state: State, config: RunnableConfig):
 #     # Add a reminder about the new report format, citation style, and table usage
 #     invoke_messages.append(
 #         HumanMessage(
-#             content="IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |",
+#             content="IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points(要点总结) - A bulleted list of the most important findings\n2. Overview(概述) - A brief introduction to the topic, should be more than 2000words \n3. Detailed Analysis(详细分析) - Organized into logical sections, each section should be more than 2000 words \n4. Survey Note (研究说明，optional) - For more comprehensive reports, this section should be more than 2000 words \n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |",
 #             name="system",
 #         )
 #     )

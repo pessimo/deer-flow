@@ -51,10 +51,10 @@ Structure your report in the following format:
 
 4. **Detailed Analysis**
    - Organize information into logical sections with clear headings.
-   - Include relevant subsections as needed.
    - Present information in a structured, easy-to-follow manner.
    - Highlight unexpected or particularly noteworthy details.
-   - **Including images from the previous steps in the report is very helpful.**
+   - this section should be really detailed.
+   - **Including original images from observation steps in the report is very helpful.**
 
 5. **Survey Note** (for more comprehensive reports)
    {% if report_style == "academic" %}

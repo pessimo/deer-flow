@@ -153,6 +153,8 @@ When planning information gathering, consider these key aspects and ensure COMPR
 
 # Output Format
 
+besure to output a four chapter title as comma separated string, each chapter title should be composed by title + subtitle。 subtitles are ['大纲', '概述', '详述', '研究说明'].
+so the chapter_title output should be like "沙面地区建筑风貌研究-大纲, 沙面地区建筑风貌研究-概述, 沙面地区建筑风貌研究-详述, 沙面地区建筑风貌研究-研究说明" when title is "沙面地区建筑风貌研究", 
 Directly output the raw JSON format of `Plan` without "```json". The `Plan` interface is defined as follows:
 
 ```ts
@@ -168,6 +170,7 @@ interface Plan {
   has_enough_context: boolean;
   thought: string;
   title: string;
+  chapter_title: string;
   steps: Step[]; // Research & Processing steps to get more context
 }
 ```

@@ -29,6 +29,7 @@ class Plan(BaseModel):
     has_enough_context: bool
     thought: str
     title: str
+    chapter_title: str
     steps: List[Step] = Field(
         default_factory=list,
         description="Research & Processing steps to get more context",
