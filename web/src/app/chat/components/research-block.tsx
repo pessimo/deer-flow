@@ -1,7 +1,15 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-import { Check, Copy, Headphones, Pencil, Undo2, X, Download } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Headphones,
+  Pencil,
+  Undo2,
+  X,
+  Download,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -72,7 +80,12 @@ export function ResearchBlock({
     const state = useStore.getState();
     const { researchIds, researchReportIds, messages } = state;
 
-    const allReports: Array<{ researchId: string; reportId: string; report: Message; index: number }> = [];
+    const allReports: Array<{
+      researchId: string;
+      reportId: string;
+      report: Message;
+      index: number;
+    }> = [];
 
     researchIds.forEach((researchId, index) => {
       const reportId = researchReportIds.get(researchId);
@@ -83,7 +96,7 @@ export function ResearchBlock({
             researchId,
             reportId,
             report,
-            index: index + 1
+            index: index + 1,
           });
         }
       }
@@ -97,61 +110,67 @@ export function ResearchBlock({
     console.log("所有reports:", allReports);
     let markdownContent = ``;
 
-     // 分离大纲和其他报告
-     const outlineReport = allReports.find(({ index }) => index === 1); // 大纲
-     const otherReports = allReports.filter(({ index }) => index > 1); // 概述、分析、综述说明
+    // 分离大纲和其他报告
+    const outlineReport = allReports.find(({ index }) => index === 1); // 大纲
+    const otherReports = allReports.filter(({ index }) => index > 1); // 概述、分析、综述说明
 
-     if (outlineReport) {
-       const outlineContent = outlineReport.report.content;
+    if (outlineReport) {
+      const outlineContent = outlineReport.report.content;
 
-       const summaryIndex = outlineContent.indexOf('## 要点总结');
-       const referenceIndex = outlineContent.indexOf('## 关键引用');
+      const summaryIndex = outlineContent.indexOf("## 要点总结");
+      const referenceIndex = outlineContent.indexOf("## 关键引用");
 
-       if (summaryIndex !== -1 && referenceIndex !== -1) {
-         const beforeSummary = outlineContent.substring(0, summaryIndex);
+      if (summaryIndex !== -1 && referenceIndex !== -1) {
+        const beforeSummary = outlineContent.substring(0, summaryIndex);
 
-         const summaryEndIndex = outlineContent.indexOf('\n\n', summaryIndex);
-         const summarySection = summaryEndIndex !== -1
-           ? outlineContent.substring(summaryIndex, summaryEndIndex + 2)
-           : outlineContent.substring(summaryIndex);
+        const summaryEndIndex = outlineContent.indexOf("\n\n", summaryIndex);
+        const summarySection =
+          summaryEndIndex !== -1
+            ? outlineContent.substring(summaryIndex, summaryEndIndex + 2)
+            : outlineContent.substring(summaryIndex);
 
-         const referenceEndIndex = outlineContent.indexOf('\n\n', referenceIndex);
-         const referenceSection = referenceEndIndex !== -1
-           ? outlineContent.substring(referenceIndex, referenceEndIndex + 2)
-           : outlineContent.substring(referenceIndex);
+        const referenceEndIndex = outlineContent.indexOf(
+          "\n\n",
+          referenceIndex,
+        );
+        const referenceSection =
+          referenceEndIndex !== -1
+            ? outlineContent.substring(referenceIndex, referenceEndIndex + 2)
+            : outlineContent.substring(referenceIndex);
 
-         const afterReference = referenceEndIndex !== -1
-           ? outlineContent.substring(referenceEndIndex + 2)
-           : '';
+        const afterReference =
+          referenceEndIndex !== -1
+            ? outlineContent.substring(referenceEndIndex + 2)
+            : "";
 
-         markdownContent += beforeSummary;
-         markdownContent += summarySection;
+        markdownContent += beforeSummary;
+        markdownContent += summarySection;
 
-         otherReports.forEach(({ report }) => {
-           markdownContent += report.content + '\n\n';
-         });
+        otherReports.forEach(({ report }) => {
+          markdownContent += report.content + "\n\n";
+        });
 
-         markdownContent += referenceSection;
-         markdownContent += afterReference;
-       } else {
-         markdownContent += outlineContent + '\n\n';
-         otherReports.forEach(({ report }) => {
-           markdownContent += report.content + '\n\n';
-         });
-       }
-     } else {
-       allReports.forEach(({ report }) => {
-         markdownContent += report.content + '\n\n';
-       });
-     }
+        markdownContent += referenceSection;
+        markdownContent += afterReference;
+      } else {
+        markdownContent += outlineContent + "\n\n";
+        otherReports.forEach(({ report }) => {
+          markdownContent += report.content + "\n\n";
+        });
+      }
+    } else {
+      allReports.forEach(({ report }) => {
+        markdownContent += report.content + "\n\n";
+      });
+    }
 
     const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
+    const pad = (n: number) => n.toString().padStart(2, "0");
     const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
     const filename = `research-reports-${timestamp}.md`;
-    const blob = new Blob([markdownContent], { type: 'text/markdown' });
+    const blob = new Blob([markdownContent], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -161,7 +180,6 @@ export function ResearchBlock({
       URL.revokeObjectURL(url);
     }, 0);
   }, []);
-
 
   const handleEdit = useCallback(() => {
     setEditing((editing) => !editing);
@@ -238,10 +256,18 @@ export function ResearchBlock({
           </Tooltip>
         </div>
         <Tabs
-          className="flex h-full w-full flex-col"
+          className="relative flex h-full w-full flex-col"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value)}
         >
+          {hasReport && !reportStreaming && (
+            <div
+              className="absolute top-1 left-4 flex h-[29px] cursor-pointer items-center rounded-lg bg-[#007aff] px-2 text-sm text-white"
+              onClick={handleDownload}
+            >
+              导出完整报告
+            </div>
+          )}
           <div className="flex w-full justify-center">
             <TabsList className="">
               <TabsTrigger
