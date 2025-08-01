@@ -10,6 +10,7 @@ import { Tooltip } from "~/components/deer-flow/tooltip";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import type { Message } from "~/core/messages";
 import { useReplay } from "~/core/replay";
 import { closeResearch, listenToPodcast, useStore } from "~/core/store";
 import { cn } from "~/lib/utils";
@@ -71,7 +72,7 @@ export function ResearchBlock({
     const state = useStore.getState();
     const { researchIds, researchReportIds, messages } = state;
 
-    const allReports: Array<{ researchId: string; reportId: string; report: any; index: number }> = [];
+    const allReports: Array<{ researchId: string; reportId: string; report: Message; index: number }> = [];
 
     researchIds.forEach((researchId, index) => {
       const reportId = researchReportIds.get(researchId);
